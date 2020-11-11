@@ -1,30 +1,45 @@
-# File: .github/workflows/repo-sync.yml
-name: sync-lxk0301-scripts
+name: JD_Sign_Action
+
 on:
+  repository_dispatch:
+  release:
+    types: published
+  # push:
+  #   branches:
+  #     - master
   schedule:
-    - cron: '1 0,15 * * *'
-  workflow_dispatch:
+    - cron: 0 20 * * *
   watch:
     types: started
-  repository_dispatch:
-    types: sync-lxk0301-scripts
-jobs:
-  repo-sync:
-    env:
-      PAT: ${{ secrets.PAT }} #此处PAT需要申请，教程详见：https://www.jianshu.com/p/bb82b3ad1d11
-      dst_key: ${{ secrets.GITEE_PRIVATE_KEY }} # 我自己同步到gitee使用，其他人可忽略
-    runs-on: ubuntu-latest
-    if: github.event.repository.owner.id == github.event.sender.id
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          persist-credentials: false
+    
+env:
+  JD_COOKIE: ${{ secrets.JD_COOKIE }}
+  JD_DUAL_COOKIE: ${{ secrets.JD_DUAL_COOKIE }}
+  PUSH_KEY: ${{ secrets.PUSH_KEY }}
+  UPLOAD_BESULT_DIR: true
 
-      - name: sync lxk0301-scripts
-        uses: repo-sync/github-sync@v2
-        if: env.PAT
-        with:
-          source_repo: "https://github.com/lxk0301/jd_scripts.git"
-          source_branch: "master"
-          destination_branch: "main"
-          github_token: ${{ secrets.PAT }}
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout codes
+              uses: actions/checkout@v2
+              
+            - name: Use Node.js
+              uses: actions/setup-node@v1
+              with:
+                node-version: '12.x'
+                
+            - name: Run install
+              run: npm install
+              
+            - name: Run Script
+              run: node jd_sign.js
+                
+            - name: Upload result file
+              uses: actions/upload-artifact@master
+              if: env.UPLOAD_BESULT_DIR == 'true'
+              with:
+                name: result
+                path: ./*.txt
